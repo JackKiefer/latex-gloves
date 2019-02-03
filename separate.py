@@ -2,6 +2,7 @@ import sys
 import string
 import os
 import re
+import pickle
 
 # all of the preamble material goes in this list
 latexPreamble=['\documentclass[convert={outext=.png},  class=exam, border=20pt, varwidth]{standalone}',
@@ -38,6 +39,9 @@ latexClosure=['\end{document}']
 # create an empty list for the bulk of all the and 
 latexCode = []
 
+# Keep track of question data
+questionData = {}
+
 def convert(inFile):
     infile = open(inFile,"r")
     while infile:
@@ -45,9 +49,13 @@ def convert(inFile):
       line = line.strip()
       line = line + '\n'
       if '\\question%' in line:
-        ndx = str.find(line,'.tex')
-        outfn = line[ndx-10:ndx]
-        outfn = './tex/' + outfn + '.tex'
+
+        # Regex the question code 
+        questionCode = re.search(r'\%(.*)\.', line).group(1)
+        # Add to data dict
+        questionData[questionCode] = {}
+
+        outfn = './tex/' + questionCode + '.tex'
         outfile = open(outfn,"w")
         line = infile.readline()
         for k in range(0,len(latexPreamble)):
@@ -55,6 +63,18 @@ def convert(inFile):
           outfile.write('\n')
         flg = 0
         while not '\\newpage\n' in line:
+          # Have a look at stripped lines
+          stripped = line.replace(' ', '')
+
+          if '%type:' in stripped:
+            questionData[questionCode]['type'] = re.search(r'\:(.*)', stripped).group(1)
+
+          if '%answer' in stripped:
+            questionData[questionCode]['answer(s)'] = re.search(r'\:(.*)', stripped).group(1)
+ 
+          if '%margin' in stripped:
+            questionData[questionCode]['margin'] = re.search(r'\:(.*)', stripped).group(1)
+
           if '\\begin{choices}\n' == line:
             flg = 1
           if '\\begin{choices}\n' == line:
@@ -91,5 +111,6 @@ if len(sys.argv) <= 1:
     print('No input file specified')
 else:
     convert(str(sys.argv[1]))
-    
-
+ 
+with open('questionData.pickle', 'wb') as handle:
+    pickle.dump(questionData, handle)

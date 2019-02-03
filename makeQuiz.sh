@@ -5,23 +5,28 @@ if [ $# -eq 0 ]; then
   exit 1
 fi
 
+echo "Preparing LaTeX gloves..."
+
+rm questionData.pickle
 rm pdf/*
 rm tex/*
 rm svg/*
 
 python separate.py $1
 
+echo "Oh, Rocky!"
+
 for f in tex/*.tex
 do
   filename=$(echo $f | sed 's/.*\/\(.*\)\.tex/\1/')
   echo "Processing question $filename..."
-  echo "Converting from TeX to PDF..."
   pdflatex -output-directory ./pdf/ tex/$filename.tex >/dev/null
-  echo "Converting from PDF to SVG..."
   pdf2svg pdf/$filename.pdf svg/$filename.svg
 done
 
-echo "Cleaning up..."
+echo "Cleaning up the mess..."
 rm pdf/*.aux
 rm pdf/*.log
 
+echo "Bringing the Canvas quiz to life..."
+python gloves.py
