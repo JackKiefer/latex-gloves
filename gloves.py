@@ -13,6 +13,9 @@ folderPath = '/chapterQuizzes/ex2'
 # Math 2250 - Spring 2019 
 courseID = '528497'
 
+folderID = '3129143'
+maxQs = 100
+
 #################################
 ## GLOBAL CONSTANTS AND TABLES ##
 #################################
@@ -44,6 +47,14 @@ canvasQuestionType = {
 ## FUNCTIONS ##
 ###############
 
+# Locate the internal canvas ID of an SVG file
+def findID(questionCode):
+    files = requests.get(baseURL + '/api/v1/folders/'+folderID+'/files?per_page=' + str(maxQs),headers=headers).json()
+    for fileJson in files:
+        if (questionCode + '.svg') in fileJson.values():
+            return str(fileJson['id'])
+    return 'BAD'
+
 # Return the public preview URL given a fileID
 def getPublicUrl(fileID):
     r =  requests.get(baseURL + '/api/v1/files/' + fileID + '/public_url',headers=headers)
@@ -53,7 +64,8 @@ def getPublicUrl(fileID):
 # Generates body text with the embedded image of corresponding
 # question code.
 def getBodyText(questionCode):
-    fileID  = questionData[questionCode]['fileID']
+#    fileID  = questionData[questionCode]['fileID']
+    fileID = findID(questionCode)
     fileURL = 'https://usu.instructure.com/files/' + fileID
     publicURL = getPublicUrl(fileID)
     return '<link rel=\"stylesheet\" href=\"'+publicURL+'\"><p><img src=\"'+fileURL+'/preview\" alt=\"'+questionCode+'\" width=\"800\" data-api-endpoint=\"https://usu.instructure.com/api/v1/courses/528497/files/'+fileID+'\" data-api-returntype=\"File\"></p><script src=\"https://instructure-uploads-2.s3.amazonaws.com/account_10090000000000015/attachments/64592351/canvas_global_app.js\"></script>'
@@ -168,14 +180,15 @@ def uploadFile(filename):
              'size' : str(size),
              'content_type' : 'image/svg+xml',
              'parent_folder_path' : folderPath }
-    r = requests.post(filesURL, data=data, headers={'Authorization':'Bearer %s'%token})
+    r = requests.post(filesURL, json=data, headers=headers)
     r.raise_for_status()
     r = r.json()
 
+    print(r)
     # Step 2: Wrap up the file and gift it to canvas :)
     gift = list(r['upload_params'].items())
     file_content = open('svg/'+filename, 'rb').read()
-    gift.append((u'file', file_content))
+#    gift.append((u'file', '@svg/'+filename))
     r = requests.post(r['upload_url'], files=gift)
     r.raise_for_status()
     return str(r.json()['id'])
@@ -216,5 +229,5 @@ for i,group in enumerate(groups):
         print('---- Uploading '+code+'.svg...')
         questionData[code]['fileID'] = uploadFile(code + '.svg')
 
-        print('-i- Creating question ' + code + '...')
+        print('---- Creating question ' + code + '...')
         genQuestion(code=code, num=n, groupID=groupID)
