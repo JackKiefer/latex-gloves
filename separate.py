@@ -69,12 +69,6 @@ def convert(inFile):
           if '%type:' in stripped:
             questionData[questionCode]['type'] = re.search(r'\:(.*)', stripped).group(1)
 
-          if '%answer' in stripped:
-            questionData[questionCode]['answer(s)'] = re.search(r'\:(.*)', stripped).group(1)
- 
-          if '%margin' in stripped:
-            questionData[questionCode]['margin'] = re.search(r'\:(.*)', stripped).group(1)
-
           if '\\begin{choices}\n' == line:
             flg = 1
           if '\\begin{choices}\n' == line:

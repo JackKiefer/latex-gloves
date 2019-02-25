@@ -7,13 +7,14 @@ import pickle
 ######################
 
 # Quiz 2
-quizID     = '695476'
-folderPath = '/chapterQuizzes/ex2'
+quizID     = '695454'
+folderPath = '/chapterQuizzes/ex3'
+
 
 # Math 2250 - Spring 2019 
 courseID = '528497'
 
-folderID = '3129143'
+folderID = '3129140'
 maxQs = 100
 
 #################################
@@ -40,7 +41,7 @@ canvasQuestionType = {
         'multiple_choice' : 'multiple_choice_question',
         'essay' : 'essay_question',
         'numeric' : 'numerical_question',
-        'fill_in_the_blank' : 'fill_in_multiple_blanks_question'
+        'fill_in_the_blank' : 'short_answer_question'
         }
 
 ###############
@@ -125,16 +126,36 @@ def makeNumericAnswer(exactAnswer, margin):
  	    'answer_range_end': end
             }
 
+def makeStringAnswer(text):
+    return {
+            'answer_text': text
+            }
+
 def getNumericAnswers(code):
     # Split the answers 
     answerStrings = questionData[code]['answer(s)'].split(',')
 
     answers = []
-    margin  = questionData[code]['margin']
+    # Default to 0 margin if no margin specified
+    margin = 0
+    if 'margin' in questionData[code].keys():
+        margin  = questionData[code]['margin']
+
     for a in answerStrings:
         answers.append(makeNumericAnswer(float(a), float(margin)))
 
     return answers
+
+def getFillInTheBlankAnswers(code):
+    # Split the answers 
+    answerStrings = questionData[code]['answer(s)'].split(',')
+    answers = []
+    for a in answerStrings:
+        answers.append(makeStringAnswer(a))
+
+    return answers
+
+
 
 # Generate the list of answers given a question code
 def getAnswers(code):
@@ -148,6 +169,9 @@ def getAnswers(code):
 
     elif questionData[code]['type'] == 'numeric':
         return getNumericAnswers(code)
+
+    elif questionData[code]['type'] == 'fill_in_the_blank':
+        return getFillInTheBlankAnswers(code)
 
     else:
         print('Bad question type for '+code+'!')
@@ -221,13 +245,14 @@ groups = groupCodes()
 
 for i,group in enumerate(groups):
     n = i + 1
-    print('')
-    print('Creating group %s...' % n)
-    groupID = createGroup(n)
+    if n == n:
+        print('')
+        print('Creating group %s...' % n)
+        groupID = createGroup(n)
 
-    for code in group:
-        print('---- Uploading '+code+'.svg...')
-        questionData[code]['fileID'] = uploadFile(code + '.svg')
+        for code in group:
+    #        print('---- Uploading '+code+'.svg...')
+    #        questionData[code]['fileID'] = uploadFile(code + '.svg')
 
-        print('---- Creating question ' + code + '...')
-        genQuestion(code=code, num=n, groupID=groupID)
+            print('---- Creating question ' + code + '...')
+            genQuestion(code=code, num=n, groupID=groupID)
