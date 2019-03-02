@@ -1,110 +1,127 @@
 import sys
-import string
-import os
 import re
-import pickle
+import numpy as np
+import pandas as pd
 
-# all of the preamble material goes in this list
-latexPreamble=['\documentclass[convert={outext=.png},  class=exam, border=20pt, varwidth]{standalone}',
-'\\usepackage{tikz, multicol, graphicx, etoolbox, enumerate, setspace, relsize}',
-'\\usepackage{amsmath, amsfonts, amssymb, amsthm, epsfig, epstopdf, titling, url, esvect, array}',
-'\\usepackage{mathrsfs, verbatim, xpatch}',
-'\\usepackage[paperwidth=400pt, paperheight=600pt]{geometry}',
-'\\usepackage{tikz-3dplot}',
-'\\usepackage{pgfplots}',
-'\\usepackage{xspace}',
-'\\usepackage{comment}',
-'\\usepackage{xspace}',
-'\\usepackage{adjustbox}',
-'\\usepgfplotslibrary{polar}',
-'\\usetikzlibrary{shapes.geometric}',
-'\\usetikzlibrary{arrows}',
-'\\usetikzlibrary[topaths]',
-'\\pgfplotsset{compat=1.15}',
-'%==================================================================',
-'\\newcommand{\\matlab}{\\textsc{Matlab}\\xspace}',
-'\\newcommand{\\ds}{\\displaystyle}',
-'\\newcommand{\\Z}{\\mathbb{Z}}',
-'\\newcommand{\\arc}{\\rightarrow}',
-'\\newcommand{\\R}{\\mathbb{R}}',
-'\\newcommand{\\spn}{\\textrm{span}}',
-'\\newcommand{\\rvec}{\\rule[.5ex]{1em}{0.4pt}}',
-'\\begin{document}']
-#'\\newcommand{\matlab}{\\textsc{Matlab}\\xspace}',
-#'\\begin{document}']
+def find(regex, tex, msg='Undefined'):
+    matches = re.findall(regex, tex, re.DOTALL)
+    if len(matches) == 0:
+        print(tex)
+        print("********")
+        print("Parse error in above LaTeX block while locating: " + msg)
+        exit(1)
+    return matches
 
-# include all of the closing matter in this list
-latexClosure=['\end{document}']
+# Given the input file, grab question codes and corresponding LaTeX
+def getCodesAndRawTex(infile):
+    questionData = {}
+    # Match all raw TeX between the question command and newpage command
+    rawTex = find(r'\\question%(.*?)newpage', infile.read(), msg='questions')
+    for questionTex in rawTex:
+        # Find the filename in the TeX
+        questionCode = re.search(r'(.*?).tex', questionTex).group(0)
+        # Drop the '.tex' extension
+        questionCode = questionCode[:-4]
+        # Add to data dictionary
+        questionData[questionCode] = {}
+        questionData[questionCode]['raw_tex'] = questionTex
+    return questionData
 
-# create an empty list for the bulk of all the and 
-latexCode = []
+def getQuestionType(tex):
+    stripped = tex.replace(' ','')
+    return re.search(r'(?<=type:).*?(?=\s)', stripped).group(0)
 
-# Keep track of question data
-questionData = {}
+def getRawSolutionsTex(tex):
+    return find(r'begin\{solution\}(.*?)end\{solution\}', tex, msg='solution')[0]
+
+def parseMatrixSolution(tex):
+    # Regex to grab between \begin{array} and \end{array}
+    rawMatrix = find(r'\\begin{array}{.*?}(.*?)\\end{array}', tex, msg='matrix solution')[0]
+    # Berid newline characters
+    rawMatrix = rawMatrix.replace('\n','')
+    # Super rad (super ugly) double list comprehension
+    return [np.matrix([[int(x) for x in row.split('&')] for row in rawMatrix.split('\\\\')])]
+   
+
+def parseMultipleChoiceSolution(tex):
+    rawChoices = find(r'\\begin{choices}(.*?)\\end{choices}',tex, msg='multiple choice options')[0]
+    choiceList = find('[C-c]hoice', rawChoices, msg='correct multiple choice response')
+    correctNum = choiceList.index('Choice')
+    return 'ABCDE'[correctNum]
+
+def getEquation(tex):
+    eq = re.findall(r'\$(.*?)\$', tex, re.DOTALL)
+    return eq[0] if len(eq) > 0 else tex
+ 
+def parseNumericSolutions(tex):
+    eq = getEquation(tex)
+    return [
+            [ 
+                float(values.replace('\n','').replace('\\','')) for values in answer.split('\pm')
+            ]
+            for answer in eq.split(',')
+           ]
+
+def getQuestionSolutions(tex, questionType):
+    # First handle types without defined {solution} tags
+    if questionType == 'essay':
+       return []
+    elif questionType == 'multiplechoice' or questionType == 'multiple_choice':
+       return parseMultipleChoiceSolution(tex)
+
+    solutionTex = getRawSolutionsTex(tex)
+
+    if questionType == 'matrix':
+        return parseMatrixSolution(solutionTex)
+    elif questionType == 'numeric':
+        return parseNumericSolutions(solutionTex)
+
+def parseAttributes(questionData):
+    for question in questionData.keys():
+        tex = questionData[question]['raw_tex']
+        questionType = getQuestionType(tex)
+        questionData[question]['type'] = questionType
+        questionData[question]['solutions'] = getQuestionSolutions(tex, questionType)
+    return questionData
+
+def getQuestionData(inFile):
+    questionData = getCodesAndRawTex(inFile)
+    questionData = parseAttributes(questionData)
+    return questionData
+
+def sanitizeSolution(code, questionData):
+    qType = questionData[code]['type']
+    tex   = questionData[code]['raw_tex']
+    if qType == 'multiple_choice' or qType == 'multiplechoice':
+        return tex.replace('CorrectChoice','choice')[:-1]
+    else:
+        ret = re.sub(r'\\begin{solution}.*?\\end{solution}', '', tex, flags=re.DOTALL)
+        return ret[:-1]
+
+def generateQuestionTex(code, questionData):
+    questionTex = sanitizeSolution(code, questionData)
+    preamble = open('resources/questionPreamble.tex').read()
+    closure  = open('resources/latexClosure.tex').read()
+    return preamble + '%' + questionTex + closure
+
+def writeToTexFile(questionCode, tex):
+    file = open('tex/' + questionCode + '.tex', 'w')
+    file.write(tex)
+    file.close()
 
 def convert(inFile):
-    infile = open(inFile,"r")
-    while infile:
-      line = infile.readline()  
-      line = line.strip()
-      line = line + '\n'
-      if '\\question%' in line:
+    questionData = getQuestionData(inFile)
+    for questionCode in questionData.keys():
+        tex = generateQuestionTex(questionCode, questionData)
+        writeToTexFile(questionCode, tex)
 
-        # Regex the question code 
-        questionCode = re.search(r'\%(.*)\.', line).group(1)
-        # Add to data dict
-        questionData[questionCode] = {}
+def main():
+    if len(sys.argv) <= 1:
+        print('No input file specified')
+        exit(1)
+    else:
+        inFile = open(str(sys.argv[1]),"r")
+        convert(inFile)
 
-        outfn = './tex/' + questionCode + '.tex'
-        outfile = open(outfn,"w")
-        line = infile.readline()
-        for k in range(0,len(latexPreamble)):
-          outfile.write(latexPreamble[k])
-          outfile.write('\n')
-        flg = 0
-        while not '\\newpage\n' in line:
-          # Have a look at stripped lines
-          stripped = line.replace(' ', '')
-
-          if '%type:' in stripped:
-            questionData[questionCode]['type'] = re.search(r'\:(.*)', stripped).group(1)
-
-          if '\\begin{choices}\n' == line:
-            flg = 1
-          if '\\begin{choices}\n' == line:
-            line = '\\begin{enumerate}[A.]\n'
-          if '\\end{choices}' in line:
-            line = '\\end{enumerate}\n'
-          if 'CorrectChoice' in line: 
-            line = str.replace(line,'CorrectChoice', 'item')
-          if '\\choice' in line:
-            line = str.replace(line,'choice', 'item')
-          if '\\begin{solution}' in line:
-            line = str.replace(line,'\\begin{solution}', '\n\\begin{comment}')     
-          if '\\end{solution}' in line:
-            line = str.replace(line,'\\end{solution}', '\\end{comment}\n')     
-          outfile.write(line)
-          line = infile.readline()  
-          line = line.strip()
-          line = line + '\n'
-          if '\\end{questions}' in line:
-            flg = 1
-            break
-    #    if flg:
-    #      outfile.write('\\end{enumerate}\n')
-        outfile.write('\\end{document}\n')
-        outfile.close()
-      if '\\end{document}' in line:
-        outfile.close()
-        break
-    print('Written TeX files to ./tex/')
-      
-      
-      
-if len(sys.argv) <= 1:
-    print('No input file specified')
-else:
-    convert(str(sys.argv[1]))
- 
-with open('questionData.pickle', 'wb') as handle:
-    pickle.dump(questionData, handle)
+if __name__ == '__main__':
+    main()
