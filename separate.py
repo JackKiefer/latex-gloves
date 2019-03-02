@@ -1,7 +1,7 @@
-import sys
-import re
 import numpy as np
 import pandas as pd
+import sys
+import re
 
 def find(regex, tex, msg='Undefined'):
     matches = re.findall(regex, tex, re.DOTALL)
