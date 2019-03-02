@@ -1,8 +1,12 @@
 import numpy as np
 import pandas as pd
+import pickle
 import sys
 import re
 
+# Perform a find-all regex on the provided TeX code,
+# and throw an error with the provided message
+# if the find-all fails to find a match.
 def find(regex, tex, msg='Undefined'):
     matches = re.findall(regex, tex, re.DOTALL)
     if len(matches) == 0:
@@ -40,7 +44,7 @@ def parseMatrixSolution(tex):
     # Berid newline characters
     rawMatrix = rawMatrix.replace('\n','')
     # Super rad (super ugly) double list comprehension
-    return [np.matrix([[int(x) for x in row.split('&')] for row in rawMatrix.split('\\\\')])]
+    return np.matrix([[int(x) for x in row.split('&')] for row in rawMatrix.split('\\\\')])
    
 
 def parseMultipleChoiceSolution(tex):
@@ -62,26 +66,29 @@ def parseNumericSolutions(tex):
             for answer in eq.split(',')
            ]
 
-def getQuestionSolutions(tex, questionType):
+def getQuestionSolutions(question, tex, questionType):
     # First handle types without defined {solution} tags
     if questionType == 'essay':
        return []
     elif questionType == 'multiplechoice' or questionType == 'multiple_choice':
        return parseMultipleChoiceSolution(tex)
-
     solutionTex = getRawSolutionsTex(tex)
-
     if questionType == 'matrix':
         return parseMatrixSolution(solutionTex)
     elif questionType == 'numeric':
         return parseNumericSolutions(solutionTex)
+    # If we haven't returned by now, throw an error
+    raise Exception(
+            "Unsupported/bad question type \"" 
+            + questionType + "\" for question " + question)
+    exit(1)
 
 def parseAttributes(questionData):
     for question in questionData.keys():
         tex = questionData[question]['raw_tex']
         questionType = getQuestionType(tex)
         questionData[question]['type'] = questionType
-        questionData[question]['solutions'] = getQuestionSolutions(tex, questionType)
+        questionData[question]['solution(s)'] = getQuestionSolutions(question, tex, questionType)
     return questionData
 
 def getQuestionData(inFile):
@@ -109,8 +116,7 @@ def writeToTexFile(questionCode, tex):
     file.write(tex)
     file.close()
 
-def convert(inFile):
-    questionData = getQuestionData(inFile)
+def separateToTex(questionData):
     for questionCode in questionData.keys():
         tex = generateQuestionTex(questionCode, questionData)
         writeToTexFile(questionCode, tex)
@@ -121,7 +127,11 @@ def main():
         exit(1)
     else:
         inFile = open(str(sys.argv[1]),"r")
-        convert(inFile)
+        questionData = getQuestionData(inFile)
+        separateToTex(questionData)
+        with open('questionData.pickle', 'wb') as handle:
+            pickle.dump(questionData, handle)
+
 
 if __name__ == '__main__':
     main()

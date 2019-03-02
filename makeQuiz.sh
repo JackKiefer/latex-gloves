@@ -29,4 +29,4 @@ rm pdf/*.aux
 rm pdf/*.log
 
 echo "Bringing the Canvas quiz to life..."
-python gloves.py
+#python gloves.py

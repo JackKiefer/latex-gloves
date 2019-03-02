@@ -1,20 +1,21 @@
 import requests
 import os
 import pickle
+import numpy as np
 
 ######################
 ## INPUT PARAMETERS ##
 ######################
 
-# Quiz 2
-quizID     = '695454'
-folderPath = '/chapterQuizzes/ex3'
+# Quiz 4
+quizID     = '695487'
+folderPath = '/chapterQuizzes/ex4'
 
 
 # Math 2250 - Spring 2019 
 courseID = '528497'
 
-folderID = '3129140'
+folderID = '3129129'
 maxQs = 100
 
 #################################
@@ -41,7 +42,8 @@ canvasQuestionType = {
         'multiple_choice' : 'multiple_choice_question',
         'essay' : 'essay_question',
         'numeric' : 'numerical_question',
-        'fill_in_the_blank' : 'short_answer_question'
+        'fill_in_the_blank' : 'short_answer_question',
+        'matrix' : 'fill_in_multiple_blanks_question'
         }
 
 ###############
@@ -62,6 +64,30 @@ def getPublicUrl(fileID):
     r.raise_for_status()
     return r.json()['public_url']
 
+def rowColCode(r, c):
+    return 'row' + str(r) + 'col' + str(c)
+
+def makeHTMLmatrix(rows, cols):
+    html = ''
+    for row in range(rows):
+        for col in range(cols):
+            html += '[' + rowColCode(row,col) + '] '
+        html += '<br />'
+    return html
+
+def matrixBodyText(code):
+    if questionData[code]['type'] != 'matrix':
+        return ''
+
+    matrix = questionData[code]['solution(s)']
+    rows, cols = matrix.shape
+
+    body = '<br />'
+    body += 'Enter matrix below:'
+    body = '<br />'
+    body += makeHTMLmatrix(rows, cols)
+    return body
+
 # Generates body text with the embedded image of corresponding
 # question code.
 def getBodyText(questionCode):
@@ -69,7 +95,8 @@ def getBodyText(questionCode):
     fileID = findID(questionCode)
     fileURL = 'https://usu.instructure.com/files/' + fileID
     publicURL = getPublicUrl(fileID)
-    return '<link rel=\"stylesheet\" href=\"'+publicURL+'\"><p><img src=\"'+fileURL+'/preview\" alt=\"'+questionCode+'\" width=\"800\" data-api-endpoint=\"https://usu.instructure.com/api/v1/courses/528497/files/'+fileID+'\" data-api-returntype=\"File\"></p><script src=\"https://instructure-uploads-2.s3.amazonaws.com/account_10090000000000015/attachments/64592351/canvas_global_app.js\"></script>'
+    base = '<link rel=\"stylesheet\" href=\"'+publicURL+'\"><p><img src=\"'+fileURL+'/preview\" alt=\"'+questionCode+'\" width=\"800\" data-api-endpoint=\"https://usu.instructure.com/api/v1/courses/528497/files/'+fileID+'\" data-api-returntype=\"File\"></p><script src=\"https://instructure-uploads-2.s3.amazonaws.com/account_10090000000000015/attachments/64592351/canvas_global_app.js\"></script>'
+    return base + matrixBodyText(questionCode)
 
 # POST a given question and return status
 def postQuestion(question):
@@ -94,7 +121,7 @@ def makeMultipleChoiceAnswer(letter, correct):
             }
 
 def getMultipleChoiceAnswers(code):
-    correctAnswer = questionData[code]['answer(s)']
+    correctAnswer = questionData[code]['solution(s)']
     A = makeMultipleChoiceAnswer('A', False)
     B = makeMultipleChoiceAnswer('B', False)
     C = makeMultipleChoiceAnswer('C', False)
@@ -131,30 +158,42 @@ def makeStringAnswer(text):
             'answer_text': text
             }
 
+def hasMargin(s):
+    return len(s) > 1
+
 def getNumericAnswers(code):
-    # Split the answers 
-    answerStrings = questionData[code]['answer(s)'].split(',')
+    solutions = questionData[code]['solution(s)']
 
     answers = []
-    # Default to 0 margin if no margin specified
-    margin = 0
-    if 'margin' in questionData[code].keys():
-        margin  = questionData[code]['margin']
-
-    for a in answerStrings:
-        answers.append(makeNumericAnswer(float(a), float(margin)))
+    for s in solutions:
+        exact  = s[0]
+        # Default to 0 margin if no margin specified
+        margin = 0
+        if hasMargin(s):
+            margin = s[1]
+        answers.append(makeNumericAnswer(exact, margin))
 
     return answers
 
-def getFillInTheBlankAnswers(code):
-    # Split the answers 
-    answerStrings = questionData[code]['answer(s)'].split(',')
+def makeMatrixAnswer(matrix, row, col):
+    return {
+            'answer_text': str(matrix[row,col]),
+            # Maybe answer_blank_id? TODO check this
+            'blank_id' : rowColCode(row,col)
+           }
+
+def getMatrixAnswers(code):
     answers = []
-    for a in answerStrings:
-        answers.append(makeStringAnswer(a))
+
+    matrix = questionData[code]['solution(s)']
+    rows, cols = matrix.shape
+    print("Shape: {}".format((rows,cols)))
+
+    for row in range(rows):
+        for col in range(cols):
+            answers.append(makeMatrixAnswer(matrix, row, col))
 
     return answers
-
 
 
 # Generate the list of answers given a question code
@@ -170,8 +209,8 @@ def getAnswers(code):
     elif questionData[code]['type'] == 'numeric':
         return getNumericAnswers(code)
 
-    elif questionData[code]['type'] == 'fill_in_the_blank':
-        return getFillInTheBlankAnswers(code)
+    elif questionData[code]['type'] == 'matrix':
+        return getMatrixAnswers(code)
 
     else:
         print('Bad question type for '+code+'!')
@@ -241,18 +280,22 @@ def groupCodes():
 ## SCRIPT ##
 ############
 
-groups = groupCodes()
+def main():
+    groups = groupCodes()
 
-for i,group in enumerate(groups):
-    n = i + 1
-    if n == n:
-        print('')
-        print('Creating group %s...' % n)
-        groupID = createGroup(n)
+    for i,group in enumerate(groups):
+        n = i + 1
+        if n == n:
+            print('')
+            print('Creating group %s...' % n)
+            groupID = createGroup(n)
 
-        for code in group:
-    #        print('---- Uploading '+code+'.svg...')
-    #        questionData[code]['fileID'] = uploadFile(code + '.svg')
+            for code in group:
+        #        print('---- Uploading '+code+'.svg...')
+        #        questionData[code]['fileID'] = uploadFile(code + '.svg')
 
-            print('---- Creating question ' + code + '...')
-            genQuestion(code=code, num=n, groupID=groupID)
+                print('---- Creating question ' + code + '...')
+                genQuestion(code=code, num=n, groupID=groupID)
+
+if __name__ == '__main__':
+    main()
