@@ -2,6 +2,7 @@ import requests
 import os
 import pickle
 import numpy as np
+import texParser as tp
 
 ######################
 ## INPUT PARAMETERS ##
@@ -187,7 +188,6 @@ def getMatrixAnswers(code):
 
     matrix = questionData[code]['solution(s)']
     rows, cols = matrix.shape
-    print("Shape: {}".format((rows,cols)))
 
     for row in range(rows):
         for col in range(cols):
@@ -217,9 +217,28 @@ def getAnswers(code):
         exit(1)
 
 
+def numericToString(n):
+    if len(n) > 1:
+        return str(n[0]) + '±' str(n[1])
+    else:
+        return str(n[0])
+
+def solutionString(code):
+    qType = questionData[code]['type']
+    if qType == 'matrix':
+        return ' of shape ' + str(questionData[code]['solution(s)'].shape)
+    elif qType == 'numeric':
+        return '(s): ' + str([numericToString(n) for n in questionData[code]['solution(s)'])
+    elif qType == 'multiple_choice':
+        return ': ' + questionData[code]['solution(s)']
+
+def printQuestionSuccss(code):
+    qType = questionData[code]['type']
+    print('Created question of type \'' + qType + '\' with solution' + solutionString(code))
+
 # Create a question object wit specified parameters
 def makeQuestion(code='',num=0,groupID=0):
-    return {
+    q = {
         "question": {
               "question_name": 'Question ' + str(num),
               "question_text": getBodyText(code),
@@ -229,6 +248,8 @@ def makeQuestion(code='',num=0,groupID=0):
               "answers" : getAnswers(code)
               }
     }
+    printQuestionSuccess(code)
+    return q
 
 # Create a question object and post it
 def genQuestion(code='',num=0,groupID=0):
@@ -237,24 +258,22 @@ def genQuestion(code='',num=0,groupID=0):
 # Upload a file and return the file ID
 def uploadFile(filename):
     # Step 1: Ask canvas nicely to upload a file
-
     size = os.path.getsize('svg/'+filename)
     data = { 'name' : filename,
              'size' : str(size),
              'content_type' : 'image/svg+xml',
              'parent_folder_path' : folderPath }
-    r = requests.post(filesURL, json=data, headers=headers)
-    r.raise_for_status()
-    r = r.json()
+    response = requests.post(filesURL, json=data, headers=headers)
+    response.raise_for_status()
+    response = response.json()
 
-    print(r)
     # Step 2: Wrap up the file and gift it to canvas :)
-    gift = list(r['upload_params'].items())
+    files = [(key, (None, val)) for key, val in response['upload_params'].items()] # Get all upload params
     file_content = open('svg/'+filename, 'rb').read()
-#    gift.append((u'file', '@svg/'+filename))
-    r = requests.post(r['upload_url'], files=gift)
-    r.raise_for_status()
-    return str(r.json()['id'])
+    files.append((u'file', file_content))
+    response = requests.post(response['upload_url'], files=files)
+    response.raise_for_status()
+    return str(response.json()['id'])
 
 def sameBase(code1, code2):
     return code1[:-1] == code2[:-1]
@@ -285,17 +304,16 @@ def main():
 
     for i,group in enumerate(groups):
         n = i + 1
-        if n == n:
-            print('')
-            print('Creating group %s...' % n)
-            groupID = createGroup(n)
+        print('')
+        print('Creating group %s...' % n)
+        groupID = createGroup(n)
 
-            for code in group:
-        #        print('---- Uploading '+code+'.svg...')
-        #        questionData[code]['fileID'] = uploadFile(code + '.svg')
+        for code in group:
+            print('---- Uploading '+code+'.svg...')
+            questionData[code]['fileID'] = uploadFile(code + '.svg')
 
-                print('---- Creating question ' + code + '...')
-                genQuestion(code=code, num=n, groupID=groupID)
+            print('---- Creating question ' + code + '...')
+            genQuestion(code=code, num=n, groupID=groupID)
 
 if __name__ == '__main__':
     main()
