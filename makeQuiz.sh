@@ -16,13 +16,7 @@ python texParser.py $1 || exit 1
 
 echo "Oh, Rocky!"
 
-for f in tex/*.tex
-do
-  filename=$(echo $f | sed 's/.*\/\(.*\)\.tex/\1/')
-  echo "Processing question $filename..."
-  pdflatex -output-directory ./pdf/ tex/$filename.tex >/dev/null || exit 1
-  pdf2svg pdf/$filename.pdf svg/$filename.svg || exit 1
-done
+./convert.sh || exit 1
 
 echo "Cleaning up the mess..."
 rm pdf/*.aux
