@@ -2,3 +2,7 @@ key.txt
 svg/**
 pdf/**
 tex/**
+__pycache__/**
+*.zip
+*.pickle
+main.tex
