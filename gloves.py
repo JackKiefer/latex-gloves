@@ -1,6 +1,7 @@
 import requests
 import os
 import pickle
+import re
 import numpy as np
 import texParser as tp
 
@@ -8,31 +9,38 @@ import texParser as tp
 ## INPUT PARAMETERS ##
 ######################
 
-# Quiz 4
-quizID     = '695487'
+# Folder path to place question images
 folderPath = '/chapterQuizzes/ex4'
-
-
-# Math 2250 - Spring 2019 
-courseID = '528497'
-
-folderID = '3129129'
-maxQs = 100
+# URL of the quiz to create
+quizURL = 'https://usu.instructure.com/courses/528497/quizzes/695487'
 
 #################################
 ## GLOBAL CONSTANTS AND TABLES ##
 #################################
+
+def parseIDs():
+    components = quizURL.split('/')
+    return components[4], components[6]
+
+
+courseID, quizID = parseIDs()
+
+
+### For use when automatic uploading to Canvas 
+### isn't working
+folderID = '3129129'
+maxQs = 100
 
 baseURL = 'https://usu.instructure.com'
 
 def readToken(filename):
     return open(filename,'r').read().strip()
 
-token = readToken('key.txt')
+token = readToken('resources/key.txt')
 headers = {'Authorization' : 'Bearer ' + token,
 	   'Content-Type'  : 'application/json' }
 
-quizURL  = baseURL + '/api/v1/courses/' + courseID + '/quizzes/' + quizID
+quizAPI_URL  = baseURL + '/api/v1/courses/' + courseID + '/quizzes/' + quizID
 filesURL = baseURL + '/api/v1/courses/' + courseID + '/files'
 
 questionData = {}
@@ -57,7 +65,8 @@ def findID(questionCode):
     for fileJson in files:
         if (questionCode + '.svg') in fileJson.values():
             return str(fileJson['id'])
-    return 'BAD'
+    raise Exception("File not located in specified Canvas folder: " + questionCode + ".svg")
+    exit(1)
 
 # Return the public preview URL given a fileID
 def getPublicUrl(fileID):
@@ -101,7 +110,7 @@ def getBodyText(questionCode):
 
 # POST a given question and return status
 def postQuestion(question):
-    return requests.post(quizURL + '/questions', json=question, headers=headers)
+    return requests.post(quizAPI_URL + '/questions', json=question, headers=headers)
 
 # Create a group with name "Group n" and return its ID
 def createGroup(n):
@@ -110,7 +119,7 @@ def createGroup(n):
                 "pick_count" : 1,
                 "question_points" : 1
             }]}
-    return requests.post(quizURL + '/groups', json=group, headers=headers).json()['quiz_groups'][0]['id']
+    return requests.post(quizAPI_URL + '/groups', json=group, headers=headers).json()['quiz_groups'][0]['id']
 
 def makeMultipleChoiceAnswer(letter, correct):
     weight = 0
@@ -178,7 +187,7 @@ def getNumericAnswers(code):
 
 def makeMatrixAnswer(matrix, row, col):
     return {
-            'answer_text': str(matrix[row,col]),
+            'answer_text': str(int(matrix[row,col])),
             # Maybe answer_blank_id? TODO check this
             'blank_id' : rowColCode(row,col)
            }
@@ -219,7 +228,7 @@ def getAnswers(code):
 
 def numericToString(n):
     if len(n) > 1:
-        return str(n[0]) + '±' str(n[1])
+        return str(n[0]) + '±' + str(n[1])
     else:
         return str(n[0])
 
@@ -228,13 +237,16 @@ def solutionString(code):
     if qType == 'matrix':
         return ' of shape ' + str(questionData[code]['solution(s)'].shape)
     elif qType == 'numeric':
-        return '(s): ' + str([numericToString(n) for n in questionData[code]['solution(s)'])
+        return '(s): ' + str([numericToString(n) for n in questionData[code]['solution(s)']])
     elif qType == 'multiple_choice':
         return ': ' + questionData[code]['solution(s)']
 
-def printQuestionSuccss(code):
+def printQuestionSuccess(code):
     qType = questionData[code]['type']
-    print('Created question of type \'' + qType + '\' with solution' + solutionString(code))
+    if qType == 'essay':
+        print('Created question of type \'essay\'')
+    else:
+        print('Created question of type \'' + qType + '\' with solution' + solutionString(code))
 
 # Create a question object wit specified parameters
 def makeQuestion(code='',num=0,groupID=0):
@@ -293,8 +305,6 @@ def groupCodes():
             groupNum += 1
     return groups
 		 
-
-
 ############
 ## SCRIPT ##
 ############
@@ -304,16 +314,18 @@ def main():
 
     for i,group in enumerate(groups):
         n = i + 1
-        print('')
-        print('Creating group %s...' % n)
-        groupID = createGroup(n)
+        if n == 9:
+            print('')
+            print('Creating group %s...' % n)
+            groupID = createGroup(n)
 
-        for code in group:
-            print('---- Uploading '+code+'.svg...')
-            questionData[code]['fileID'] = uploadFile(code + '.svg')
+            for code in group:
+                print('---- Uploading '+code+'.svg...')
+                questionData[code]['fileID'] = uploadFile(code + '.svg')
 
-            print('---- Creating question ' + code + '...')
-            genQuestion(code=code, num=n, groupID=groupID)
+                print('---- Creating question ' + code + '...')
+                genQuestion(code=code, num=n, groupID=groupID)
+                print('')
 
 if __name__ == '__main__':
     main()
