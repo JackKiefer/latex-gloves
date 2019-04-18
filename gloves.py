@@ -10,9 +10,9 @@ import texParser as tp
 ######################
 
 # Folder path to place question images
-folderPath = '/chapterQuizzes/ex4'
+folderPath = '/final'
 # URL of the quiz to create
-quizURL = 'https://usu.instructure.com/courses/528497/quizzes/695487'
+quizURL = 'https://usu.instructure.com/courses/528497/quizzes/695468'
 
 #################################
 ## GLOBAL CONSTANTS AND TABLES ##
@@ -101,8 +101,8 @@ def matrixBodyText(code):
 # Generates body text with the embedded image of corresponding
 # question code.
 def getBodyText(questionCode):
-#    fileID  = questionData[questionCode]['fileID']
-    fileID = findID(questionCode)
+    fileID  = questionData[questionCode]['fileID']
+#    fileID = findID(questionCode)
     fileURL = 'https://usu.instructure.com/files/' + fileID
     publicURL = getPublicUrl(fileID)
     base = '<link rel=\"stylesheet\" href=\"'+publicURL+'\"><p><img src=\"'+fileURL+'/preview\" alt=\"'+questionCode+'\" width=\"800\" data-api-endpoint=\"https://usu.instructure.com/api/v1/courses/528497/files/'+fileID+'\" data-api-returntype=\"File\"></p><script src=\"https://instructure-uploads-2.s3.amazonaws.com/account_10090000000000015/attachments/64592351/canvas_global_app.js\"></script>'
@@ -187,8 +187,7 @@ def getNumericAnswers(code):
 
 def makeMatrixAnswer(matrix, row, col):
     return {
-            'answer_text': str(int(matrix[row,col])),
-            # Maybe answer_blank_id? TODO check this
+            'answer_text': matrix[row,col],
             'blank_id' : rowColCode(row,col)
            }
 
@@ -288,7 +287,7 @@ def uploadFile(filename):
     return str(response.json()['id'])
 
 def sameBase(code1, code2):
-    return code1[:-1] == code2[:-1]
+    return (code1[:-1] == code2[:-1]) and (not code1[-1].isdigit()) and (not code2[-1].isdigit())
 
 # Place codes into appropriate groups based on their base.
 # Relies on the codes being in sorted order.
@@ -314,7 +313,7 @@ def main():
 
     for i,group in enumerate(groups):
         n = i + 1
-        if n == 9:
+        if n == n:
             print('')
             print('Creating group %s...' % n)
             groupID = createGroup(n)

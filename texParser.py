@@ -4,6 +4,16 @@ import pickle
 import sys
 import re
 
+def niceFloatFormat(x):
+    s = str('%.2f' % float(x))
+    if s[-1] == '0':
+        s = s[:-1]
+    if s[-1] == '0':
+        s = s[:-1]
+    if s[-1] == '.':
+        s = s[:-1]
+    return s
+
 # Perform a find-all regex on the provided TeX code,
 # and throw an error with the provided message
 # if the find-all fails to find a match.
@@ -34,7 +44,7 @@ def getCodesAndRawTex(infile):
 # Parse question TeX to determine type
 def getQuestionType(tex):
     stripped = tex.replace(' ','')
-    return re.search(r'(?<=type:).*?(?=\s)', stripped).group(0)
+    return find(r'(?<=type:).*?(?=\s)', stripped, msg='question type')[0]
 
 # Extract solution TeX from question TeX
 def getRawSolutionsTex(tex):
@@ -47,7 +57,7 @@ def parseMatrixSolution(tex):
     # Berid newline characters
     rawMatrix = rawMatrix.replace('\n','')
     # Super rad (super ugly) double list comprehension is all there is to it
-    return np.matrix([[int(x) for x in row.split('&')] for row in rawMatrix.split('\\\\')])
+    return np.matrix([[niceFloatFormat(x) for x in row.split('&')] for row in rawMatrix.split('\\\\')])
    
 
 # Figure out the correct multiple choice solution from question TeX
@@ -74,24 +84,36 @@ def parseNumericSolutions(tex):
             for answer in eq.split(',')
            ]
 
+
+# Check to see if we have a valid question type and throw an error if we don't.
+# Add in a cheeky message if they forgot the underscore in 'multiple_choice'
+def checkQuestionType(questionType, question):
+    if questionType not in ['essay', 'multiple_choice', 'matrix', 'numeric']:
+        # Add a helpful message for common errors
+        helpfulMessage = ''
+        if questionType == 'multiplechoice':
+            helpfulMessage = '. Did you mean \"multiple_choice\"?'
+        raise Exception(
+                "Unsupported/bad question type \"" 
+                + questionType + "\" for question " + question + helpfulMessage)
+        # Die!
+        exit(1)
+ 
 # Parse the solution to a question according to its question type
 def getQuestionSolutions(question, tex, questionType):
+    # Make sure we have a valid question type
+    checkQuestionType(questionType, question)
     # First handle types without defined {solution} tags
     if questionType == 'essay':
        return []
     elif questionType == 'multiple_choice':
        return parseMultipleChoiceSolution(tex)
-    # Now, fetch the {solution} content for the other tyes
+    # Now, fetch the {solution} content for the other types
     solutionTex = getRawSolutionsTex(tex)
     if questionType == 'matrix':
         return parseMatrixSolution(solutionTex)
     elif questionType == 'numeric':
         return parseNumericSolutions(solutionTex)
-    # If we haven't returned by now, throw an error
-    raise Exception(
-            "Unsupported/bad question type \"" 
-            + questionType + "\" for question " + question)
-    exit(1)
 
 # Parse all question attributes and the attributes to
 # the questionData structure
@@ -157,6 +179,7 @@ def main():
         questionData = getQuestionData(inFile)
         makeQuestionTexFiles(questionData)
         pickleDump(questionData)
+    print('Successfully parsed TeX file.')
 
 if __name__ == '__main__':
     main()

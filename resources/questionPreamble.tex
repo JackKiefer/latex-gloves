@@ -1,7 +1,7 @@
 \documentclass[convert={outext=.png},  class=exam, border=20pt, varwidth]{standalone}
 \usepackage{tikz, multicol, graphicx, etoolbox, enumerate, setspace, relsize}
 \usepackage{amsmath, amsfonts, amssymb, amsthm, epsfig, epstopdf, titling, url, esvect, array}
-\usepackage{mathrsfs, verbatim, xpatch}
+\usepackage{mathrsfs, verbatim, xpatch, mathtools}
 \usepackage[paperwidth=400pt, paperheight=600pt]{geometry}
 \usepackage{tikz-3dplot}
 \usepackage{pgfplots}
@@ -9,6 +9,7 @@
 \usepackage{comment}
 \usepackage{xspace}
 \usepackage{adjustbox}
+\usepackage{tkz-graph}
 \usepgfplotslibrary{polar}
 \usetikzlibrary{shapes.geometric}
 \usetikzlibrary{arrows}
@@ -22,4 +23,7 @@
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\spn}{\textrm{span}}
 \newcommand{\rvec}{\rule[.5ex]{1em}{0.4pt}}
+\newcommand*\rfrac[2]{{}^{#1}\!/_{#2}}
+\newcommand{\dgr}{^{\circ}}
+
 \begin{document}
