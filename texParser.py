@@ -3,6 +3,9 @@ import pickle
 import sys
 import re
 
+# Supported question types
+QUESTION_TYPES = ['essay', 'multiple_choice', 'matrix', 'numeric']
+
 def niceFloatFormat(x):
     s = str('%.2f' % float(x))
     if s[-1] == '0':
@@ -71,27 +74,67 @@ def parseMultipleChoiceSolution(tex):
 def getEquation(tex):
     eq = re.findall(r'\$(.*?)\$', tex, re.DOTALL)
     return eq[0] if len(eq) > 0 else tex
+
+def parseVal(val):
+    try:
+        return float(eval(val.replace('\n','').replace('\\','')))
+    except:
+        raise Exception(
+                'Unable to parse numeric solution \"{}\" for question {}.\n' 
+            +   'Ensure that the field has no extraneous info aside from a bare'
+            +   'integer (such as 3), decimal number (such as 3.9), or fraction'
+            +   '(such as 3/9)'
+        )
+        # Die!
+        exit(1)
  
 # Fetch the list of numeric answers and their margins 
 # from the given solution TeX
-def parseNumericSolutions(tex):
+def parseNumericSolutions(tex, question):
     eq = getEquation(tex)
     return [
             [ 
-                float(values.replace('\n','').replace('\\','')) for values in answer.split('\pm')
+                parseVal(val, question) for val in answer.split('\pm')
             ]
             for answer in eq.split(',')
            ]
 
 
+# Compute the edit distance between two strings.
+# Used for suggestion a correction for invalid question types.
+def editDistance(s1, s2):
+    if len(s1) > len(s2):
+        s1, s2 = s2, s1
+
+    distances = range(len(s1) + 1)
+    for i2, c2 in enumerate(s2):
+        distances_ = [i2+1]
+        for i1, c1 in enumerate(s1):
+            if c1 == c2:
+                distances_.append(distances[i1])
+            else:
+                distances_.append(1 + min((distances[i1], distances[i1 + 1], distances_[-1])))
+        distances = distances_
+    return distances[-1]
+
+# Given an invalid question type, determine which valid question type its closest to
+def closestMatch(invalidQType):
+    dists = [editDistance(q, invalidQType) for q in QUESTION_TYPES]
+    return QUESTION_TYPES[dists.index(min(dists))]
+
+# Generate a helpful error message given an invalid question type
+def helpfulMessage(invalidQType):
+    if invalidQType == 'fill_in_the_blank':
+        return '. Fill-in-the-blank questions are a very bad idea and are intentionally not supported.'
+    return '. Did you mean \"{}\"?'.format(closestMatch(invalidQType))
+
 # Check to see if we have a valid question type and throw an error if we don't.
 # Add in a cheeky message if they forgot the underscore in 'multiple_choice'
 def checkQuestionType(questionType, question):
-    if questionType not in ['essay', 'multiple_choice', 'matrix', 'numeric']:
-        # Add a helpful message for common errors
-        helpfulMessage = ''
-        if questionType == 'multiplechoice':
-            helpfulMessage = '. Did you mean \"multiple_choice\"?'
+    # An extra special case
+    if questionType not in QUESTION_TYPES:
+        # Add a helpful message suggesting the closest question type
+        helpfulMessage = helpfulMessage(questionType) 
         raise Exception(
                 "Unsupported/bad question type \"" 
                 + questionType + "\" for question " + question + helpfulMessage)
@@ -112,7 +155,7 @@ def getQuestionSolutions(question, tex, questionType):
     if questionType == 'matrix':
         return parseMatrixSolution(solutionTex)
     elif questionType == 'numeric':
-        return parseNumericSolutions(solutionTex)
+        return parseNumericSolutions(solutionTex, question)
 
 # Parse all question attributes and the attributes to
 # the questionData structure
