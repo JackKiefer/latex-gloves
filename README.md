@@ -1,36 +1,102 @@
-# First time set-up
+# First-time setup
 
-1.  Have the following installed on your system:  
-    * **MiKTeX** and the corresponding command ``pdflatex``. [Website](https://miktex.org/)  
-    * **pdf2svg**, with installation info found at its [GitHub Repository](https://github.com/dawbarton/pdf2svg)  
+## Install Python
+1. Download the latest version of Python 3.7 for Windows from [the Python website.](https://www.python.org/) The file is called ``python-3.7.x.exe`` where ``x`` is the minor version number.
+2. Run ``python-3.7.x.exe``. Check "Add Python 3.7 to PATH" and press "Install Now"
 
-2.  Generate a Canvas API key and store it in ``resources/key.txt``
-    * While logged in to Canvas, go to ``Account > Settings``
-    * Under "Approved Integrations," selection ``+ New Access Token``
-    * Write something descriptive for the token's purpose and generate it.
-    * Create a file named ``key.txt`` in the ``resources/`` directory, paste your token into it, and save. Make sure the file has no whitespace.
-    
+## Install Python dependencies
+1. Open up the Windows Command Prompt:
+    1.  Hit the Windows key (``⊞ Win``) to open the start menu
+    2.  Type ``cmd`` and press enter
+2. In the command prompt, run the command ``pip install numpy sympy``
+
+## Install MiKTeX
+
+1.  Navigate to the [MiKTeX download page](https://miktex.org/download)and nab the executable. 
+2.  When installing, be sure to let it check for updates.
+
+## Install latex-gloves
+1. Download ``latex-gloves-master.zip`` from [here](https://github.com/JackMiranda/latex-gloves/archive/master.zip)
+2. Extract ``latex-gloves-master.zip`` to a folder you can easily find. In this example, we'll use ``C:\Users\2250\Desktop\latex-gloves-master``
+
+
 # Usage
+Once the quiz is ready to be uploaded:
 
-**Quick usage:**
-*  Input the proper quiz URL and file path at the top of ``gloves.py``
-*  Download the .tex file from Overleaf (in this example, it shall be named ``main.tex``) 
-*  Run ``python texParser.py main.tex``. Resolve any parsing errors in the TeX file. 
-*  Cross your fingers and run ``./makeQuiz.sh main.tex``
+## Environment setup
+1.  In the Overleaf project, click ``Menu > Download > Source`` to download a zip file of the project.
+2.  Extract the contents of the zip file to the same directory that latex-gloves is installed (e.g., ``C:\Users\2250\Desktop\latex-gloves-master``
+3.  Open up with Windows Command Prompt.
+4.  Navigate to the latex-gloves directory within the command prompt using the ``cd`` (change directory) command. E.g., run ``cd C:\Users\2250\Desktop\latex-gloves-master``
 
-### Understanding and working with LaTeX-gloves
+## Parsing the TeX
+1.  Pass the main TeX file (e.g., ``main.tex``) into the TeX parser by running ``python texParser.py main.tex``. _Note:_ For this to work, ``main.tex`` and ``texParser.py`` must be in the same folder.
+2.  At this time, the TeX parser will inform you of any parsing errors that it encounters. If errors are encountered, they must be fixed within the TeX file by the user. See the section below on question formatting and parsing.
 
-It is important to know how LaTeX gloves operates so that the points of failure can be detected when something goes wrong.
 
-The LaTeX-gloves pipeline can be simply thought of as **Parse TeX -> Convert to SVG -> Construct Quiz -> Upload**. 
 
-*  ``texParser.py`` parses the input TeX file, collects the information of each question, and separates each question out into individual TeX files.
-*  ``convert.sh`` converts each individual TeX file to a PDF file and then converts each PDF file to an SVG file. It uses LaTeX preamble
-*  ``gloves.py`` uses the question data proved by ``texParser.py`` and the images provided by ``convert.sh`` to construct the quiz and upload it to Canvas. 
 
-``makeQuiz.sh`` is simply a convenience script that strings these individual programs together.
 
-### Potential points of failure
 
-* ``texParser.py`` is written to fail gracefully and give hopefully enough information to you when there's a formatting error in the input TeX file. Sometimes the failure might be so wonky that texParser crashes all-together. In any case, this will happen when your input TeX file is ill-formatted.
-* ``convert.sh`` will fail when there is an actual LaTeX syntax error in the individual question .texs. Make sure Overleaf says there are no syntax errors (the PDF in overleaf will often compile anyway). Additionally, if you started using a new package or custom command in the Overleaf document, make sure you also make the proper changes to the preamble in ``resources/``
+
+
+
+# Why no fill-in-the-blank questions?
+
+Automating fill-in-the-blank questions is a very, very bad idea. We've tried it before. It was awful. Never do it. Ever. 
+
+Consider the following example:
+
+```
+A rectangle is formed on the XY-plane. Three of its corners are defined by (0,0), (0, 1/3), and (1/2, 0). Where is its fourth corner?
+```
+
+Clearly, the answer is simply ``(1/2, 1/3)``. Now, this is a fine answer format for a handwritten test. Unfortunately, this is a veritable nightmare trying to encode into Canvas. 
+
+Fill-in-the-blank questions in Canvas are not "smart;" to get the answer correct, what the student inputs must match one of the possible answers _character-for-character_. This quickly explodes into a huge variety of different possible answers that are all correct and mathematically equivalent, but using different characters (and yes, _spaces_ count as characters, too):
+
+* ``(1/2, 1/3)``
+* ``(0.5, 0.33)``
+* ``(0.50, 0.333)``
+* ``1/2, 1/3``
+* ``0.5, 0.33``
+* ``0.50, 0.333``
+* ``x=1/2, y=1/3``
+* ``x = 1/2, y = 1/3``
+* ``(1/2,1/3)``
+* ``(0.5,0.33)``
+* ``(0.50,0.333)``
+* ``1/2,1/3``
+* ``0.5,0.33``
+* ``0.50,0.333``
+* ``x=1/2,y=1/3``
+* ``x = 1/2,y = 1/3``
+* `` (1/2, 1/3)``
+* `` (0.5, 0.33)``
+* `` (0.50, 0.333)``
+* `` 1/2, 1/3``
+* `` 0.5, 0.33``
+* `` 0.50, 0.333``
+* `` x=1/2, y=1/3``
+* `` x = 1/2, y = 1/3``
+* `` (1/2,1/3)``
+* `` (0.5,0.33)``
+* `` (0.50,0.333)``
+* `` 1/2,1/3``
+* `` 0.5,0.33``
+* `` 0.50,0.333``
+* `` x=1/2,y=1/3``
+* `` x = 1/2,y = 1/3``
+
+
+I'm sure you can imagine even more entries in the above list.
+
+You might think that maybe, _just maybe_, you can provide specific-enough instructions to wrangle students into a consistent answer format. You might think that _your_ students are smart enough to figure it out. You are wrong. You are more wrong than you realize. Never underestimate the creative stupidity of a human being. Okay, you specify, "include parentheses, express all numbers as fractions in their lowest terms, and do not include a space anywhere in the coordinate pair." So, a student complies, and writes ``The fourth corner is located at (1/2,1/3)``. They are marked wrong by the auto-grader. The student is upset. Their parents angrily call the president of the university demanding a grade change _this instant_. Your palm flies through your face. It will happen.
+
+Fill-in-the-blank answers are a bad idea. Don't do it. Don't even think about it.
+
+If you really, _really_, and I mean _really really_ want a fill-in-the-blank question that isn't a math question, like "What city was the Pascal programming language created in?", then, by all means, input it manually into Canvas. Latex-gloves will not be responsible for your blunder. Just be sure to include all of the possible answers of ``Zurich``, ``Zürich``, ``Zurich, Switzerland``, ``Zurich,Switzerland``, ``Zürich, Switzerland``, and ``Zürich,Switzerland``.
+
+
+
+

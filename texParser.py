@@ -16,6 +16,15 @@ def niceFloatFormat(x):
         s = s[:-1]
     return s
 
+# Print an error message and kill the program
+# without all of the scary python stuff that comes with
+# raising an exception.
+def error(msg):
+    print("********")
+    print('Error: {}'.format(msg))
+    print("********")
+    exit(1)
+
 # Perform a find-all regex on the provided TeX code,
 # and throw an error with the provided message
 # if the find-all fails to find a match.
@@ -25,6 +34,7 @@ def find(regex, tex, msg='Undefined'):
         print(tex)
         print("********")
         print("Parse error in above LaTeX block while locating: " + msg)
+        print("********")
         exit(1)
     return matches
 
@@ -75,18 +85,16 @@ def getEquation(tex):
     eq = re.findall(r'\$(.*?)\$', tex, re.DOTALL)
     return eq[0] if len(eq) > 0 else tex
 
-def parseVal(val):
+def parseVal(val, question):
     try:
         return float(eval(val.replace('\n','').replace('\\','')))
     except:
-        raise Exception(
-                'Unable to parse numeric solution \"{}\" for question {}.\n' 
+        error(
+                ('Unable to parse numeric solution \"{}\" for question {}.\n' 
             +   'Ensure that the field has no extraneous info aside from a bare'
             +   'integer (such as 3), decimal number (such as 3.9), or fraction'
-            +   '(such as 3/9)'
+            +   '(such as 3/9)').format(val,question)
         )
-        # Die!
-        exit(1)
  
 # Fetch the list of numeric answers and their margins 
 # from the given solution TeX
@@ -123,7 +131,7 @@ def closestMatch(invalidQType):
     return QUESTION_TYPES[dists.index(min(dists))]
 
 # Generate a helpful error message given an invalid question type
-def helpfulMessage(invalidQType):
+def makeHelpfulMessage(invalidQType):
     if invalidQType == 'fill_in_the_blank':
         return '. Fill-in-the-blank questions are a very bad idea and are intentionally not supported.'
     return '. Did you mean \"{}\"?'.format(closestMatch(invalidQType))
@@ -134,12 +142,10 @@ def checkQuestionType(questionType, question):
     # An extra special case
     if questionType not in QUESTION_TYPES:
         # Add a helpful message suggesting the closest question type
-        helpfulMessage = helpfulMessage(questionType) 
-        raise Exception(
+        helpfulMessage = makeHelpfulMessage(questionType) 
+        error(
                 "Unsupported/bad question type \"" 
                 + questionType + "\" for question " + question + helpfulMessage)
-        # Die!
-        exit(1)
  
 # Parse the solution to a question according to its question type
 def getQuestionSolutions(question, tex, questionType):
@@ -209,10 +215,17 @@ def pickleDump(questionData):
         pickle.dump(questionData, handle)
 
 
+# Convert the parsed TeX files into PDFs, then into PNGs
+def convert():
+    os.chdir('tex/') 
+    for file in glob.glob('*.tex'):
+        print(file)
+    return
+
 # Running the script will generate individual TeX files for
 # each question in the input TeX file and write out the parsed
 # question data to a pickle.
-def main():
+def parseLaTeX():
     if len(sys.argv) <= 1:
         print('No input file specified')
         exit(1)
@@ -224,4 +237,4 @@ def main():
     print('Successfully parsed TeX file.')
 
 if __name__ == '__main__':
-    main()
+    parseLaTeX()
