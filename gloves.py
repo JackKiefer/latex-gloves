@@ -1,22 +1,21 @@
-import requests
-import os
-import pickle
-import re
-import numpy as np
-import texParser as tp
-
 ######################
 ## INPUT PARAMETERS ##
 ######################
 
 # Folder path to place question images
-folderPath = '/final'
+folderPath = '/test'
 # URL of the quiz to create
 quizURL = 'https://usu.instructure.com/courses/528497/quizzes/695468'
 
 #################################
 ## GLOBAL CONSTANTS AND TABLES ##
 #################################
+import requests
+import os
+import pickle
+import re
+import numpy as np
+import texParser as tp
 
 def parseIDs():
     components = quizURL.split('/')
@@ -59,13 +58,13 @@ canvasQuestionType = {
 ## FUNCTIONS ##
 ###############
 
-# Locate the internal canvas ID of an SVG file
+# Locate the internal canvas ID of an png file
 def findID(questionCode):
     files = requests.get(baseURL + '/api/v1/folders/'+folderID+'/files?per_page=' + str(maxQs),headers=headers).json()
     for fileJson in files:
-        if (questionCode + '.svg') in fileJson.values():
+        if (questionCode + '.png') in fileJson.values():
             return str(fileJson['id'])
-    raise Exception("File not located in specified Canvas folder: " + questionCode + ".svg")
+    raise Exception("File not located in specified Canvas folder: " + questionCode + ".png")
     exit(1)
 
 # Return the public preview URL given a fileID
@@ -269,10 +268,10 @@ def genQuestion(code='',num=0,groupID=0):
 # Upload a file and return the file ID
 def uploadFile(filename):
     # Step 1: Ask canvas nicely to upload a file
-    size = os.path.getsize('svg/'+filename)
+    size = os.path.getsize('png/'+filename)
     data = { 'name' : filename,
              'size' : str(size),
-             'content_type' : 'image/svg+xml',
+             'content_type' : 'image/png',
              'parent_folder_path' : folderPath }
     response = requests.post(filesURL, json=data, headers=headers)
     response.raise_for_status()
@@ -280,7 +279,7 @@ def uploadFile(filename):
 
     # Step 2: Wrap up the file and gift it to canvas :)
     files = [(key, (None, val)) for key, val in response['upload_params'].items()] # Get all upload params
-    file_content = open('svg/'+filename, 'rb').read()
+    file_content = open('png/'+filename, 'rb').read()
     files.append((u'file', file_content))
     response = requests.post(response['upload_url'], files=files)
     response.raise_for_status()
@@ -319,8 +318,8 @@ def main():
             groupID = createGroup(n)
 
             for code in group:
-                print('---- Uploading '+code+'.svg...')
-                questionData[code]['fileID'] = uploadFile(code + '.svg')
+                print('---- Uploading '+code+'.png...')
+                questionData[code]['fileID'] = uploadFile(code + '.png')
 
                 print('---- Creating question ' + code + '...')
                 genQuestion(code=code, num=n, groupID=groupID)
