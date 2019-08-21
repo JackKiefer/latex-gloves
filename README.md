@@ -2,6 +2,36 @@
 
 latex-gloves allows an entire quiz to be defined in a collaborative Overleaf document. The program automates: generating individual images for each question; uploading the images to Canvas; creating question groups; and creating multiple-choice, numeric-answer, matrix, and essay quiz questions.
 
+Table of Contents
+=================
+
+   * [First-time setup](#first-time-setup)
+      * [Step 1: Install (Windows / Mac OS)](#step-1-install-windows--mac-os)
+         * [i) Install Python](#i-install-python)
+         * [ii) Install Python dependencies](#ii-install-python-dependencies)
+         * [iii) Install MiKTeX](#iii-install-miktex)
+         * [iv) Install latex-gloves](#iv-install-latex-gloves)
+      * [Step 1: Install (Linux)](#step-1-install-linux)
+      * [Step 2: Generate a Canvas API key (all systems)](#step-2-generate-a-canvas-api-key-all-systems)
+   * [User guide](#user-guide)
+      * [Step 1: Structuring the quiz and formatting questions](#step-1-structuring-the-quiz-and-formatting-questions)
+         * [Master headers and question headers](#master-headers-and-question-headers)
+         * [Master footers and question footers](#master-footers-and-question-footers)
+         * [Formatting questions](#formatting-questions)
+            * [Numeric-answer questions](#numeric-answer-questions)
+            * [Multiple-choice questions](#multiple-choice-questions)
+            * [Essay questions](#essay-questions)
+            * [Matrix-answer questions (experimental)](#matrix-answer-questions-experimental)
+      * [Step 2: Parsing and uploading the quiz to Canvas](#step-2-parsing-and-uploading-the-quiz-to-canvas)
+         * [Quick command reference](#quick-command-reference)
+         * [i) Environment setup](#i-environment-setup)
+         * [ii) Splitting the master file into individual .tex files](#ii-splitting-the-master-file-into-individual-tex-files)
+         * [iii) Converting to PNGs](#iii-converting-to-pngs)
+         * [iv) Upload to Canvas](#iv-upload-to-canvas)
+   * [Why no fill-in-the-blank questions?](#why-no-fill-in-the-blank-questions)
+
+Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
+
 # First-time setup
 
 ## Step 1: Install (Windows / Mac OS)
@@ -54,6 +84,8 @@ You know what you're doing.
 ## Step 1: Structuring the quiz and formatting questions
 
 Each quiz should be contained in a single master TeX file (usually in Overleaf to allow for collaboration) consisting of a **master header**, any number of **questions**, and a **master footer**. 
+
+Each question in the quiz is automatically assigned to be worth 1 point. At the moment, there is no way to change this behavior; different point scales must be manually assigned. 
 
 ### Master headers and question headers
 The each header is simply a LaTeX preamble consisting of the document declaration, package includes, and any custom declarations. 
@@ -183,6 +215,8 @@ The all-important ``\newpage``! This _must_ go at the end of all question blocks
 #### Numeric-answer questions
 Numeric-answer questions support multiple correct answers and allow for an acceptable margin of error. Each correct answer should be separated by a comma (,). The ``\pm`` operator (±) allows each answer to be given an appropriate bound. 
 
+Here, we're asking for the square root of one ninth. We indicate that acceptable answers are ``0.333`` and ``-0.333`` with an error margin of ``0.01`` (that way, answers like ``0.33`` and ``-0.333333333`` are still accepted):
+
 ```latex
 \question%c01s02n08c.tex
 %type: numeric
@@ -191,29 +225,114 @@ Numeric-answer questions support multiple correct answers and allow for an accep
 \hfill c01s02n08c
 \vspace{1em}
 
-Given $x^2 = 81$, solve for $x$.
+Given $x^2 = \frac{1}{9}$, solve for $x$.
 
 \vspace{1em}
 {\rule{\linewidth}{0.4pt}}
 
 \begin{solution}
-$9, -9$
+$0.333 \pm 0.01, 0.333 \pm 0.01$
 \end{solution}
 
 \newpage
 ```
 
-Let's break down each component.
+This is about as complex as a numeric solution gets. If an error margin of 0 is desired, the ``\pm`` may be omitted. For example, the solution to ``What is 2*2?``" might simply look like:
 
-```latex
-\question%c01s02n08b.tex
-%type: numeric
+```
+\begin{solution}
+$4$
+\end{solution}
 ```
 
-
 #### Multiple-choice questions
-#### Matrix-answer questions
+Multiple choice questions support up to 26 possible choices in accordance with the alphabet (heaven have mercy on the students who must answer such a question). Choices are dynamically generated using the ``choices`` environment. The correct choice is simply indicated using the ``\CorrectChoice`` command. Choices are displayed in the order that you list them and are not randomized.
+
+Note that, in the Overleaf preview, the correct choice will be bolded for you to easily keep track of it. Worry not; when the question is rendered by itself, the bold will go away. 
+
+```latex
+\question%c01s02n09a.tex
+%type: multiple_choice
+
+\hfill \today
+\hfill c01s02n09a
+\vspace{1em}
+
+Which of the following lines are parallel to $y = 3x + 3$?
+
+\vspace{1em}
+{\rule{\linewidth}{0.4pt}}
+
+\begin{choices}
+    \choice         $y = 2x + 3$
+    \choice         $y = 2x + 2$
+    \CorrectChoice  $y = 3x + 2$
+    \choice         $y = 9x + 9$
+\end{choices}
+
+\newpage
+```
+
 #### Essay questions
+
+Essay questions, of course, cannot be automatically graded. For this question type, the ``solution`` field is optional, but you may wish to use it to include helpful info for whoever is grading the question by hand:
+
+```latex
+\question%c01s02n19.tex
+%type: essay
+
+\hfill \today
+\hfill c01s02n19
+\vspace{1em}
+
+Which of Leonhard Euler's contributions to mathematics is your favorite, and why?
+
+\vspace{1em}
+{\rule{\linewidth}{0.4pt}}
+
+\begin{solution}
+    Some examples are $e^{i \pi} + 1 = 0$, the Seven Bridges of Königsberg, the totient function, etc. Points are not awarded for contributions not made by Euler.
+\end{solution}
+
+\newpage
+```
+
+#### Matrix-answer questions (experimental)
+
+This experimental question type allows for the answers of questions to be entire matrices (useful for courses in Linear Algebra). The question type is experimental, as it is not officially supported by Canvas; rather, it is our own concoction. 
+
+Under the hood, the matrix-answer is simply a fill-in-the-blank question with a grid of required blanks to fill in. As per the section below on fill-in-the-blank questions, use with extreme caution. It is wisest to keep each entry an simple integer.
+
+Matrices like these are graded element-by-element. A totally complete and correct matrix is worth 1 point. A matrix with no correct entries is 0 points. A matrix with two-thirds of the entries correct is 0.66 points. Et cetera. It does not matter how large the matrix is.
+
+The solution is formatted as an ``array``:
+
+
+```latex
+\question%c01s02n20a.tex
+%type: matrix
+
+\hfill \today
+\hfill c01s02n20a
+\vspace{1em}
+
+What is the 3x3 identity matrix?
+
+\vspace{1em}
+{\rule{\linewidth}{0.4pt}}
+
+\begin{solution}
+$
+    \begin{array}{rrr}
+        1 & 0 & 0 \\
+        0 & 1 & 0 \\
+        0 & 0 & 1
+    \end{array}
+$
+\end{solution}
+
+\newpage
+```
 
 ## Step 2: Parsing and uploading the quiz to Canvas
 
@@ -237,7 +356,7 @@ python gloves.py
 3.  At this time, the TeX parser will inform you of any parsing errors that it encounters. If errors are encountered, they must be fixed within the TeX file by the user. See the section above on question syntax.
 
 ### iii) Converting to PNGs
-1.  Simply run ``python convert.py`` to begin the conversion process. Hopefully, since your document compiled without error on overleaf, the questions will be compiled without error here, as well. In any case, a bunch of very verbose output will be spit onto the screen by ``pdflatex``, and it will indicate any compiler errors that need be fixed.
+1.  Simply run ``python convert.py`` to begin the conversion process. Hopefully, since your document compiled without error on Overleaf, the questions will be compiled without error here, as well. In any case, a bunch of very verbose output will be spit onto the screen by ``pdflatex``, and it will indicate any compiler errors that need be fixed.
 
 ### iv) Upload to Canvas
 1.  Open up ``gloves.py`` in your favorite text editor.
