@@ -239,7 +239,7 @@ $0.333 \pm 0.01, 0.333 \pm 0.01$
 
 This is about as complex as a numeric solution gets. If an error margin of 0 is desired, the ``\pm`` may be omitted. For example, the solution to ``What is 2*2?``" might simply look like:
 
-```
+```latex
 \begin{solution}
 $4$
 \end{solution}
@@ -347,8 +347,8 @@ python gloves.py
 1.  In the Overleaf project, first ensure that the document is compiling with no errors, and that all lines commented out with a ``\begin{comment}`` command have been deleted or converted to the ``%`` comment style.
 2.  Click ``Menu > Download > Source`` to download a zip file of the project.
 3.  Extract the contents of the zip file to the same directory that latex-gloves is installed (e.g., ``C:\Users\2250\Desktop\latex-gloves-master``
-4.  Open up with Windows Command Prompt.
-5.  Navigate to the latex-gloves directory within the command prompt using the ``cd`` (change directory) command. E.g., run ``cd C:\Users\2250\Desktop\latex-gloves-master``
+4.  Open up a command terminal.
+5.  Navigate to the latex-gloves directory within the command prompt using the ``cd`` (change directory) command. E.g., run ``cd C:\Users\2250\Desktop\latex-gloves-master`` if you're on Windows.
 
 ### ii) Splitting the master file into individual .tex files
 1.  Ensure that all packages you plan on using are indicated in the header file, ``resources/questionPreamble.tex``. This block of TeX is included at the start of all individual tex files. Similarly, ``resources/latexClosure.tex`` is included at the end of each tex file if you need to make any adjustments there.
