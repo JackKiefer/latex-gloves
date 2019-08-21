@@ -292,7 +292,8 @@ Which of Leonhard Euler's contributions to mathematics is your favorite, and why
 {\rule{\linewidth}{0.4pt}}
 
 \begin{solution}
-    Some examples are $e^{i \pi} + 1 = 0$, the Seven Bridges of Königsberg, the totient function, etc. Points are not awarded for contributions not made by Euler.
+    Some examples are $e^{i \pi} + 1 = 0$, the Seven Bridges of Königsberg, the totient function, etc.
+    Points are not awarded for contributions not made by Euler.
 \end{solution}
 
 \newpage
