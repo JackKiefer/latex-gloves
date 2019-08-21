@@ -28,6 +28,7 @@ Table of Contents
          * [ii) Splitting the master file into individual .tex files](#ii-splitting-the-master-file-into-individual-tex-files)
          * [iii) Converting to PNGs](#iii-converting-to-pngs)
          * [iv) Upload to Canvas](#iv-upload-to-canvas)
+   * [Parsing errors](#parsing-errors)
    * [Why no fill-in-the-blank questions?](#why-no-fill-in-the-blank-questions)
 
 Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
@@ -365,6 +366,17 @@ python gloves.py
 4.  Cross your fingers and run ``python gloves.py``!
 
 
+
+# Parsing errors
+These errors begin with "**Parse error in above LaTex block while locating:...**". The errors mean that latex-gloves attempted to use a regex to find a particular element, but was unable to. Be sure to check for spelling mistakes and missing/extraneous characters.
+
+Parse error in above LaTeX block while locating...
+    *  ``questions`` - The ``\question%code.tex`` and corresponding ``\newpage`` directives could not be found
+    *  ``question type`` - The ``%type: `` directive following the question declaration could not be found
+    *  ``solution`` - The ``\begin{solution}`` and corresponding ``\end{solution}`` directives could not be found
+    *  ``matrix solution`` - The question is of type ``matrix`` and the ``\begin{array}`` and corresponding ``\end{array}`` directives could not be found
+    *  ``multiple choice options`` - The question is of type ``multiple_choice`` and the ``\begin{choices}`` and corresponding ``\end{choices}`` directives could not be found
+    *  ``correct multiple choice response`` - The question is of type ``multiple_choice`` and the ``choices`` environment was found, but a ``\CorrectChoice`` could not be located 
 
 # Why no fill-in-the-blank questions?
 
