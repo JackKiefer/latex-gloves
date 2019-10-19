@@ -45,7 +45,7 @@ Created by [gh-md-toc](https://github.com/ekalinin/github-markdown-toc)
 1. Open up a command console.
     *  **Windows:** Hit the Windows key (``⊞ Win``) to open the start menu, type ``cmd``, press enter.
     *  **Mac OS:** Launch the Terminal application found in ``Applications > Utilities``
-2. In the console, run the command ``pip install numpy sympy``
+2. In the console, run the command ``pip install numpy sympy requests``
 
 ### iii) Install MiKTeX
 
@@ -62,7 +62,7 @@ For Debian-based systems:
 
 ```
 sudo apt install texlive-latex-base texlive-fonts-recommended texlive-latex-extra
-pip install numpy sympy
+pip install numpy sympy requests
 git clone https://github.com/JackMiranda/latex-gloves
 cd latex-gloves
 ```
