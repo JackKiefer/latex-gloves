@@ -294,6 +294,7 @@ def groupCodes():
     groups   = []
     groupNum = 0
     codes = list(questionData.keys())
+    codes.sort()
     groups.append([codes[0]])
     for i in range(1,len(codes)):
         if sameBase(codes[i],codes[i-1]):
