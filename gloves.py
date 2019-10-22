@@ -1,11 +1,11 @@
-######################
-## INPUT PARAMETERS ##
-######################
+############################
+## DUMMY INPUT PARAMETERS ##
+############################
 
 # Folder path to place question images
-folderPath = '/test'
+FOLDER_PATH = '/test'
 # URL of the quiz to create
-quizURL = 'https://usu.instructure.com/courses/528497/quizzes/695468'
+QUIZ_URL = 'https://usu.instructure.com/courses/528497/quizzes/695468'
 
 #################################
 ## GLOBAL CONSTANTS AND TABLES ##
@@ -14,11 +14,12 @@ import requests
 import os
 import pickle
 import re
+import sys
 import numpy as np
 import texParser as tp
 
 def parseIDs():
-    components = quizURL.split('/')
+    components = QUIZ_URL.split('/')
     return components[4], components[6]
 
 
@@ -272,7 +273,7 @@ def uploadFile(filename):
     data = { 'name' : filename,
              'size' : str(size),
              'content_type' : 'image/png',
-             'parent_folder_path' : folderPath }
+             'parent_folder_path' : FOLDER_PATH }
     response = requests.post(filesURL, json=data, headers=headers)
     response.raise_for_status()
     response = response.json()
@@ -303,14 +304,33 @@ def groupCodes():
             groups.append([codes[i]])
             groupNum += 1
     return groups
+
+
+# Ensure that sufficient arguments have been supplied
+def checkArgs():
+    # If there are not three arguments
+    if len(sys.argv) != 3:
+        # Print a usage message and exit
+        print('Usage: python gloves.py <FOLDER_PATH> <QUIZ_URL>,\n\
+                Where <FOLDER_PATH> is the path to place images in and\n\
+                <QUIZ_URL> is the URL of the Canvas quiz.')
+        exit()
 		 
 ############
 ## SCRIPT ##
 ############
 
 def main():
+    # Handle command-line arguments
+    global FOLDER_PATH, QUIZ_URL
+    checkArgs()
+    FOLDER_PATH = sys.argv[1]
+    QUIZ_URL    = sys.argv[2]
+
+    # Group the codes together based on their naming schema
     groups = groupCodes()
 
+    # Begin creating groups
     for i,group in enumerate(groups):
         n = i + 1
         if n == n:
