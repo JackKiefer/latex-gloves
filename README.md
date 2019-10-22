@@ -342,7 +342,7 @@ $
 ```
 python texParser.py main.tex
 python convert.py
-python gloves.py
+python gloves.py <FOLDER_URL> <QUIZ_URL>
 ```
 
 ### i) Environment setup
@@ -361,10 +361,7 @@ python gloves.py
 1.  Simply run ``python convert.py`` to begin the conversion process. Hopefully, since your document compiled without error on Overleaf, the questions will be compiled without error here, as well. In any case, a bunch of very verbose output will be spit onto the screen by ``pdflatex``, and it will indicate any compiler errors that need be fixed.
 
 ### iv) Upload to Canvas
-1.  Open up ``gloves.py`` in your favorite text editor.
-2.  Change ``folderPath`` to the path in Canvas's file system you'd like to upload the quizz's images to, e.g. ``/quizzes/chapter1``. Make sure this path begins with a leading ``/``.
-3.  Create an empty quiz in Canvas, and change ``quizURL`` to the quiz's URL. It should look something like ``https://xxx.instructure.com/courses/xxxxx/quizzes/xxxxx``.
-4.  Cross your fingers and run ``python gloves.py``!
+1.  Run ``gloves.py <FOLDER_URL> <QUIZ_URL>`` where ``FOLDER_URL`` is the URL to Canvas's file system you'd like to upload the quiz's images to, e.g. ``https://usu.instructure.com/courses/xxx/folders/quizzes/chapter1`` and ``QUIZ_URL`` is the quiz's URL. It should look something like ``https://xxx.instructure.com/courses/xxxxx/quizzes/xxxxx``.
 
 
 
