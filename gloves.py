@@ -4,11 +4,11 @@
 ############################
 ## DUMMY INPUT PARAMETERS ##
 ############################
-
+import sys
 # Folder path to place question images
-FOLDER_PATH = ''
+FOLDER_PATH = sys.argv[1]
 # URL of the quiz to create
-QUIZ_URL = ''
+QUIZ_URL = sys.argv[2]
 
 #################################
 ## GLOBAL CONSTANTS AND TABLES ##
@@ -17,7 +17,6 @@ import requests
 import os
 import pickle
 import re
-import sys
 import numpy as np
 import texParser as tp
 
@@ -25,9 +24,7 @@ def parseIDs():
     components = QUIZ_URL.split('/')
     return components[4], components[6]
 
-
 courseID, quizID = parseIDs()
-
 
 ### For use when automatic uploading to Canvas 
 ### isn't working
@@ -325,11 +322,7 @@ def checkArgs():
 
 def main():
     # Handle command-line arguments
-    global FOLDER_PATH, QUIZ_URL
     checkArgs()
-    FOLDER_PATH = sys.argv[1]
-    QUIZ_URL    = sys.argv[2]
-
     # Group the codes together based on their naming schema
     groups = groupCodes()
 
