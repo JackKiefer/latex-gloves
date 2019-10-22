@@ -6,9 +6,9 @@
 ############################
 
 # Folder path to place question images
-FOLDER_PATH = '/test'
+FOLDER_PATH = ''
 # URL of the quiz to create
-QUIZ_URL = 'https://usu.instructure.com/courses/528497/quizzes/695468'
+QUIZ_URL = ''
 
 #################################
 ## GLOBAL CONSTANTS AND TABLES ##
