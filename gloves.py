@@ -1,18 +1,19 @@
 #!/usr/bin/python
 # -*- coding: latin-1 -*-
 
-############################
-## DUMMY INPUT PARAMETERS ##
-############################
-import sys
-# Folder path to place question images
-FOLDER_PATH = sys.argv[1]
-# URL of the quiz to create
-QUIZ_URL = sys.argv[2]
-
 #################################
 ## GLOBAL CONSTANTS AND TABLES ##
 #################################
+
+def parsePathUrl(url):
+    return '/' + '/'.join(url.split('/')[7:])
+
+import sys
+# Folder path to place question images
+FOLDER_PATH = parsePathUrl(sys.argv[1])
+# URL of the quiz to create
+QUIZ_URL = sys.argv[2]
+
 import requests
 import os
 import pickle
